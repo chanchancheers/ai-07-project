@@ -116,13 +116,61 @@ router.post('/update_process', (req,res)=>{
                         });
     });
   
+router.get('/delete/:content', (req, res)=>{
+    var find_id = req.params.content
+
+    DB.find()
+        .then((result)=>{
+           
+                var title = '방명록'
+                var tbody = template.boardList2(result)
+
+                var html = template.Board(title, 
+                                        `<form action="/board/delete_process" method="post">
+                                        <input type="hidden" name="id" value="${find_id}">
+                                        <p><input type="password" name="password" placeholder="암호를 입력하세요"></p>
+                                        <p><input type="submit" value="지우기"></p>
+                                        </form>`,
+                                        tbody, 
+                                        `<a href="/board/create">글쓰기</a> <a href="/board/update/${find_id}">수정하기</a>
+                    <a href="/board/delete/${find_id}">지우기</a>`)
+
+                res.send(html)
+                
+            
+            
+        })
+
+})
+
 router.post('/delete_process', (req, res)=>{
     var post = req.body;
     var find_id = post.id
-    DB.deleteOne({_id:find_id})
-        .then(()=>{
-            res.redirect('/board')
+    var pass = post.password
+    DB.find({_id : find_id})
+        .then((result)=>{
+            if(result[0]['password'] === pass){
+                DB.deleteOne({_id:find_id})
+                    .then(()=>{
+                res.redirect('/board')
         })
+            } else{
+                var html = template.failed(`암호가 틀렸습니다.
+                <p><a href=/board/delete/${find_id}">이전 페이지로 이동</a></p>`)
+                res.status(500).send(html)
+/*
+<script>
+                function goBack(){
+                    window.history.back();
+                }
+</script>
+<input type="button" value="다시 시도" onclick="goBack();" />
+<a href="goBack();">다시 시도 </a>
+<a href="#" onclick="goBack();"> 다시 시도</a> 등도 있다
+*/
+            }
+        })
+    
 })
 
 
@@ -141,10 +189,7 @@ router.get('/:content', (req, res)=>{
                 var sanitizedContent = sanitizeHtml(queryResult[0]['content'])
                 var html = template.Board(title, sanitizedContent,
                     tbody, `<a href="/board/create">글쓰기</a> <a href="/board/update/${find_id}">수정하기</a>
-                    <form action="/board/delete_process" method="post">
-                    <input type="hidden" name="id" value="${find_id}">
-                    <input type="submit" value="지우기">
-                </form>`)
+                    <a href="/board/delete/${find_id}">지우기</a>`)
 
                 res.send(html)
                 })
